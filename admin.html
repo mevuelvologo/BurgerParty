@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Burger Party — Panel de precios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --red:#D8141C; --black:#141010; --blue:#3E6FE0; --white:#fff; --gray:#b9b0af; --green:#2fae56;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; min-height:100vh;
+    background:var(--black);
+    font-family:'Montserrat', sans-serif;
+    color:var(--white);
+  }
+  .wrap{ max-width:640px; margin:0 auto; padding:32px 18px 60px; }
+  .back{ color:var(--gray); font-size:13px; text-decoration:none; }
+  .back:hover{ color:var(--white); }
+  h1{ font-size:22px; margin:18px 0 4px; }
+  .notice{
+    font-size:12.5px; color:var(--gray); line-height:1.5;
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
+    border-radius:10px; padding:12px 14px; margin:14px 0 26px;
+  }
+  .notice b{ color:var(--white); }
+
+  /* ---- gate de contraseña ---- */
+  #gate{ max-width:340px; margin:60px auto 0; text-align:center; }
+  #gate p{ color:var(--gray); font-size:13px; line-height:1.5; margin-bottom:18px; }
+  #gate input{
+    width:100%;
+    background:rgba(255,255,255,0.06);
+    color:var(--white);
+    border:2px solid rgba(255,255,255,0.25);
+    border-radius:10px;
+    padding:12px 14px;
+    font-family:'Montserrat', sans-serif;
+    font-size:15px;
+    text-align:center;
+    margin-bottom:12px;
+  }
+  #gate input:focus{ outline:none; border-color:var(--blue); }
+  #gate-error{ color:#ff8080; font-size:12.5px; min-height:16px; margin-bottom:8px; }
+
+  /* ---- panel ---- */
+  #panel{ display:none; }
+  .row{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:12px;
+    padding:12px 14px;
+    margin-bottom:10px;
+  }
+  .row .info{ line-height:1.3; }
+  .row .name{ font-weight:700; font-size:14px; }
+  .row .sub{ font-size:11.5px; color:var(--gray); }
+  .row input{
+    width:110px;
+    background:var(--white);
+    color:var(--black);
+    border:2px solid var(--blue);
+    border-radius:8px;
+    padding:8px 10px;
+    font-family:'Montserrat', sans-serif;
+    font-weight:800;
+    font-size:14px;
+    text-align:center;
+  }
+  .btn{
+    width:100%;
+    margin-top:14px;
+    background:var(--red);
+    color:var(--white);
+    border:none;
+    border-radius:12px;
+    padding:16px;
+    font-family:'Montserrat', sans-serif;
+    font-weight:800;
+    font-size:15px;
+    cursor:pointer;
+  }
+  .btn:hover{ filter:brightness(1.08); }
+  .btn.secondary{ background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); }
+  .status{ margin-top:12px; font-size:12.5px; color:var(--gray); text-align:center; min-height:16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="burger-party.html">&larr; Volver al sitio</a>
+  <h1>Panel de precios — Burger Party</h1>
+
+  <div id="gate">
+    <p>Página interna. Ingresá la clave para editar los precios.</p>
+    <input type="password" id="gate-input" placeholder="Clave" autocomplete="off">
+    <div id="gate-error"></div>
+    <button class="btn" id="gate-btn" type="button">Entrar</button>
+  </div>
+
+  <div id="panel">
+    <div class="notice">
+      Los clientes que ven el sitio público <b>no</b> pueden editar precios — esa opción se
+      sacó de la página pública, solo está acá.<br><br>
+      <b>Importante:</b> esta página guarda lo que cargues en este mismo navegador (para que no
+      se pierda si volvés a entrar), pero <b>no actualiza sola</b> lo que ven los clientes — este
+      sitio no tiene un servidor detrás. Usá "Copiar resumen" y mandámelo (por donde te resulte
+      más cómodo) para que lo aplique en la página pública. Si más adelante quieren que se
+      actualice solo, hay que sumar un backend real — lo vemos cuando quieran.
+    </div>
+
+    <div id="rows"></div>
+
+    <button class="btn" id="save-btn" type="button">Guardar en este navegador</button>
+    <button class="btn secondary" id="copy-btn" type="button">Copiar resumen</button>
+    <div class="status" id="status"></div>
+  </div>
+</div>
+
+<script>
+  // Clave simple para desalentar el acceso casual. OJO: al ser un sitio estático,
+  // cualquiera que mire el código fuente puede verla — no reemplaza un login real.
+  const ADMIN_PASSWORD = 'burgerparty2026';
+
+  const products = [
+    { name:'Papas Bastón',        sub:'x 2 Kg',              price:'00.000' },
+    { name:'6 Latas De Birra',    sub:'x 473 cc',            price:'00.000' },
+    { name:'4 Super Burger',      sub:'con pan Bimbo',       price:'00.000' },
+    { name:'6 Burger Clásicas',   sub:'Bimbo Artesano',      price:'00.000' },
+    { name:'Papas Smiles',        sub:'x 700 gr',            price:'00.000' },
+    { name:'Fernet con Coca',     sub:'4,5L + 750cc',        price:'00.000' },
+    { name:'4 Burger Unión 55 g', sub:'Bimbo Artesano',      price:'00.000' },
+    { name:'6 Salchichas Largas', sub:'con Pan Fargo',       price:'00.000' },
+    { name:'Burger Party x4 unidades', sub:'Combo',          price:'00.000' },
+  ];
+
+  const STORAGE_KEY = 'burgerparty_precios';
+
+  // ---- gate ----
+  const gate = document.getElementById('gate');
+  const panel = document.getElementById('panel');
+  const gateInput = document.getElementById('gate-input');
+  const gateError = document.getElementById('gate-error');
+
+  function unlock(){
+    gate.style.display = 'none';
+    panel.style.display = 'block';
+    sessionStorage.setItem('burgerparty_admin_ok', '1');
+  }
+
+  document.getElementById('gate-btn').addEventListener('click', tryUnlock);
+  gateInput.addEventListener('keydown', e => { if(e.key === 'Enter') tryUnlock(); });
+
+  function tryUnlock(){
+    if(gateInput.value === ADMIN_PASSWORD){
+      unlock();
+    } else {
+      gateError.textContent = 'Clave incorrecta.';
+    }
+  }
+
+  if(sessionStorage.getItem('burgerparty_admin_ok') === '1'){
+    unlock();
+  }
+
+  // ---- filas de precios ----
+  let saved = null;
+  try{ saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }catch(e){ saved = null; }
+
+  const rowsEl = document.getElementById('rows');
+  products.forEach((p, i) => {
+    const value = (saved && saved[i]) ? saved[i] : p.price;
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `
+      <div class="info">
+        <div class="name">${p.name}</div>
+        <div class="sub">${p.sub}</div>
+      </div>
+      <input type="text" inputmode="numeric" value="${value}" data-idx="${i}" spellcheck="false">
+    `;
+    rowsEl.appendChild(row);
+  });
+
+  const statusEl = document.getElementById('status');
+
+  document.getElementById('save-btn').addEventListener('click', () => {
+    const inputs = [...rowsEl.querySelectorAll('input')];
+    const values = inputs.map(input => input.value.trim());
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(values));
+    statusEl.textContent = 'Guardado en este navegador.';
+  });
+
+  document.getElementById('copy-btn').addEventListener('click', async () => {
+    const inputs = [...rowsEl.querySelectorAll('input')];
+    const lines = inputs.map((input, i) => `- ${products[i].name}${products[i].sub ? ' (' + products[i].sub + ')' : ''}: $${input.value.trim()}`);
+    const text = 'Precios nuevos - Burger Party\n\n' + lines.join('\n');
+
+    try{
+      await navigator.clipboard.writeText(text);
+      statusEl.textContent = 'Resumen copiado — pegalo donde lo tengas que mandar.';
+    }catch(e){
+      statusEl.textContent = 'No se pudo copiar automáticamente. Seleccioná y copiá el texto manualmente.';
+    }
+  });
+</script>
+</body>
+</html>
