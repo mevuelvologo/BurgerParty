@@ -38,7 +38,7 @@
     gap:16px;
   }
   .logo-mark{ width:190px; max-width:42vw; flex:0 0 auto; }
-  .logo-mark svg{ width:100%; height:auto; display:block; }
+  .logo-mark img{ width:100%; height:auto; display:block; }
 
   .header-right{ display:flex; flex-direction:column; align-items:flex-end; gap:8px; flex:0 0 auto; }
 
@@ -169,28 +169,52 @@
   }
   .card--photo .art img{
     position:absolute; inset:0;
-    width:100%; height:78%;
+    width:100%; height:68%;
     object-fit:contain;
     padding:10px 8px 0;
   }
   .card--photo .art::after{
     content:"";
-    position:absolute; left:0; right:0; bottom:0; height:70%;
-    background:linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.9) 85%);
+    position:absolute; left:0; right:0; bottom:0; height:78%;
+    background:linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.92) 80%);
   }
 
-  .dot{
-    position:absolute; top:10px; right:10px;
-    width:20px;height:20px;
-    border-radius:50%;
-    background:rgba(255,255,255,0.08);
+  .qty-stepper{
+    position:absolute; top:8px; right:8px; z-index:3;
+    display:flex; align-items:center; gap:4px;
+    background:rgba(0,0,0,0.55);
     border:2px solid rgba(255,255,255,0.75);
-    z-index:3;
-    transition:background .15s ease;
+    border-radius:14px;
+    padding:3px;
+    transition:background .15s ease, border-color .15s ease;
   }
-  .card.selected .dot{ background:var(--white); box-shadow:0 0 0 3px rgba(255,255,255,0.25); }
+  .card.selected .qty-stepper{ background:rgba(255,255,255,0.18); border-color:var(--white); }
+  .qty-btn{
+    width:18px; height:18px;
+    border:none; border-radius:50%;
+    background:rgba(255,255,255,0.9);
+    color:var(--black);
+    font-weight:800;
+    font-size:13px;
+    line-height:1;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    padding:0;
+  }
+  .qty-btn:hover{ background:var(--white); }
+  .qty-value{
+    min-width:14px;
+    text-align:center;
+    font-size:11px;
+    font-weight:800;
+    color:var(--white);
+  }
+  .qty-stepper:not(.has-qty) .qty-minus,
+  .qty-stepper:not(.has-qty) .qty-value{
+    display:none;
+  }
 
-  .card h3{ position:relative; z-index:2; margin:0 0 2px; font-size:15px; font-weight:700; line-height:1.25; }
+  .card h3{ position:relative; z-index:2; margin:0 0 3px; font-size:30px; font-weight:700; line-height:1.12; }
   .card .sub{ position:relative; z-index:2; margin:0 0 8px; font-size:11px; color:var(--gray); font-weight:500; }
 
   .price-box{
@@ -246,7 +270,7 @@
   }
   .combo-overlay .label{ font-weight:700; font-size:17px; position:relative; z-index:2; }
   .combo-overlay .label i{ color:var(--yellow); font-style:normal; }
-  .combo .dot{ z-index:4; }
+  .combo .qty-stepper{ z-index:4; }
 
   /* ---------- FOOTER (sobrio, fondo negro completo) ---------- */
   footer{
@@ -268,7 +292,7 @@
     max-width:920px;
     margin:0 auto 40px;
   }
-  .brand-logos svg{ width:100%; height:auto; display:block; }
+  .brand-logos img{ width:100%; height:auto; display:block; }
   .footer-divider{
     max-width:900px; margin:0 auto; border:none; border-top:1px solid rgba(255,255,255,0.12);
   }
@@ -278,6 +302,6 @@
     text-align:center;
   }
   .footer-logo{ width:170px; max-width:50vw; }
-  .footer-logo svg{ width:100%; height:auto; display:block; }
+  .footer-logo img{ width:100%; height:auto; display:block; }
   .footer-icons{ display:flex; gap:14px; }
   .footer-address{ font-size:12px; color:rgba(255,255,255,0.55); font-weight:500; max-width:320px; }
