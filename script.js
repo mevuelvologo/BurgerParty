@@ -15,13 +15,13 @@
   //   precio es precio unitario x cantidad.
   const products = [
     { id:'p1', type:'photo', img:'images/papas-baston.png',   name:'Papas Bastón',        sub:'x 2 Kg',              price:'8.000',  step:1, mode:'multiply' },
-    { id:'p2', type:'photo', img:'images/latas-birra.png',    name:'6 Latas De Birra',    sub:'x 473 cc',            price:'00.000', step:1, mode:'multiply' },
-    { id:'p3', type:'photo', img:'images/super-burger.jpg',   name:'4 Super Burger',      sub:'con pan Bimbo',       price:'10.000', step:2, mode:'replace', baseCount:4, nameRest:' Super Burger' },
-    { id:'p4', type:'photo', img:'images/burger-clasicas.jpg',name:'6 Burger Clásicas',   sub:'Bimbo Artesano',      price:'14.000', step:2, mode:'replace', baseCount:6, nameRest:' Burger Clásicas' },
+    { id:'p2', type:'photo', img:'images/latas-birra.png',    name:'6 Latas De Birra',    sub:'x 473 cc',            price:'12.000', step:1, mode:'multiply' },
+    { id:'p3', type:'photo', img:'images/super-burger.jpg',   name:'4 Super Burger',      sub:'con pan Bimbo Artesano',      price:'10.000', step:2, mode:'replace', baseCount:4, nameRest:' Super Burger' },
+    { id:'p4', type:'photo', img:'images/burger-clasicas.jpg',name:'6 Burger Clásicas',   sub:'con pan Bimbo Artesano',      price:'14.000', step:2, mode:'replace', baseCount:6, minCount:4, nameRest:' Burger Clásicas' },
     { id:'p5', type:'photo', img:'images/papas-smiles.png',   name:'Papas Smiles',        sub:'x 700 gr',            price:'8.000',  step:1, mode:'multiply' },
-    { id:'p6', type:'photo', img:'images/fernet-coca.png',    name:'Fernet con Coca',     sub:'4,5L + 750cc',        price:'00.000', step:1, mode:'multiply' },
-    { id:'p7', type:'photo', img:'images/burger-union.jpg',   name:'4 Burger Unión 55 g', sub:'Bimbo Artesano',      price:'00.000', step:2, mode:'replace', baseCount:4, nameRest:' Burger Unión 55 g' },
-    { id:'p8', type:'photo', img:'images/pan-bimbo.jpg',      name:'2 Pan Bimbo Artesano',sub:'Bimbo Artesano',      price:'8.000',  step:2, mode:'replace', baseCount:2, nameRest:' Pan Bimbo Artesano' },
+    { id:'p6', type:'photo', img:'images/fernet-coca.png',    name:'Fernet con Coca',     sub:'4,5L + 750cc',        price:'27.500', step:1, mode:'multiply' },
+    { id:'p7', type:'photo', img:'images/burger-union.jpg',   name:'4 Burger Unión 55 g', sub:'con pan Bimbo Artesano',      price:'6.500',  step:2, mode:'replace', baseCount:4, nameRest:' Burger Unión 55 g' },
+    { id:'p8', type:'photo', img:'images/salchichas.jpg',     name:'6 Salchichas Largas', sub:'con Pan Fargo',       price:'8.000',  step:1, mode:'multiply' },
   ];
 
   const grid = document.getElementById('grid');
@@ -110,6 +110,9 @@
   });
 
   // ---------- COMBO CARD ----------
+  // Sacada por ahora (ocupaba 9 módulos abajo de todo). Para reactivarla,
+  // descomentar este bloque.
+  /*
   const comboData = { name:'Burger Party x4 unidades', sub:'', price:'8.000', step:1, mode:'multiply' };
   const combo = document.createElement('div');
   combo.className = 'card card--text combo';
@@ -130,12 +133,13 @@
   `;
   grid.appendChild(combo);
   setupCardBehavior(combo, comboData);
+  */
 
   updateCart();
 
   // ---------- COMPORTAMIENTO DE CADA TARJETA ----------
   function setupCardBehavior(card, p){
-    const { name, sub, price: basePriceText, step, mode, baseCount, nameRest } = p;
+    const { name, sub, price: basePriceText, step, mode, baseCount, minCount, nameRest } = p;
 
     card.dataset.name = name;
     card.dataset.sub = sub;
@@ -178,7 +182,7 @@
     }
 
     function setQty(newQty){
-      const floor = mode === 'replace' ? baseCount : step;
+      const floor = mode === 'replace' ? (minCount || baseCount) : step;
       card.dataset.qty = String(newQty < floor ? 0 : newQty);
       render();
       updateCart();
