@@ -37,7 +37,7 @@
     margin:0 auto;
     gap:16px;
   }
-  .logo-mark{ width:190px; max-width:42vw; flex:0 0 auto; }
+  .logo-mark{ width:228px; max-width:50vw; flex:0 0 auto; }
   .logo-mark img{ width:100%; height:auto; display:block; }
 
   .header-right{ display:flex; flex-direction:column; align-items:flex-end; gap:8px; flex:0 0 auto; }
