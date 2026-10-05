@@ -24,6 +24,80 @@
     { id:'p8', type:'photo', img:'images/salchichas.jpg',     name:'6 Salchichas Largas', sub:'con Pan Fargo',       price:'8.000',  step:1, mode:'multiply' },
   ];
 
+  // ---------- PACKS (carrusel infinito) ----------
+  // Para agregar un pack nuevo en el futuro: sumá un objeto acá, nada más.
+  const packs = [
+    { img:'images/pack-1.jpg', alt:'Pack 1 — 4 hamburguesas con pan y papas' },
+    { img:'images/pack-2.jpg', alt:'Pack 2 — 8 hamburguesas con pan, papas y cheddar' },
+    { img:'images/pack-3.jpg', alt:'Pack 3 — 60 hamburguesas con pan y aderezo' },
+    { img:'images/pack-4.jpg', alt:'Pack 4 — 4 hamburguesas de pollo con pan' },
+  ];
+
+  (function setupPacksScreens(){
+    const container = document.getElementById('packs-screens');
+    if(!container || packs.length === 0) return;
+
+    const SLOTS = 3;
+    const ROTATE_MS = 3000;
+    const FADE_MS = 500;
+
+    // Si hay 3 packs o menos, se muestran fijos, sin rotar (no hay de dónde sacar un 4to).
+    const n = Math.min(SLOTS, packs.length);
+    container.innerHTML = packs.slice(0, n).map(p => `
+      <div class="pack-screen">
+        <img src="${p.img}" alt="${p.alt}" loading="lazy">
+      </div>
+    `).join('');
+
+    if(packs.length <= SLOTS) return;
+
+    const screens = [...container.querySelectorAll('.pack-screen')];
+    // "visible" = índice (en packs[]) que muestra cada pantalla ahora mismo.
+    const visible = [0, 1, 2];
+    let missing = SLOTS; // el único pack que todavía no se está mostrando
+    let slotPtr = 0;
+    let paused = false;
+    let timer = null;
+
+    function swapSlot(slotIndex, packIndex){
+      const screen = screens[slotIndex];
+      const oldImg = screen.querySelector('img');
+      const newImg = document.createElement('img');
+      newImg.src = packs[packIndex].img;
+      newImg.alt = packs[packIndex].alt;
+      newImg.loading = 'lazy';
+      newImg.style.opacity = '0';
+      screen.appendChild(newImg);
+      // forzar reflow para que la transición de opacidad corra
+      void newImg.offsetWidth;
+      oldImg.classList.add('is-out');
+      newImg.style.opacity = '1';
+      setTimeout(() => oldImg.remove(), FADE_MS + 50);
+    }
+
+    function tick(){
+      if(paused) return;
+      const outgoing = visible[slotPtr];
+      visible[slotPtr] = missing;
+      swapSlot(slotPtr, missing);
+      missing = outgoing;
+      slotPtr = (slotPtr + 1) % SLOTS;
+    }
+
+    function start(){ timer = setInterval(tick, ROTATE_MS); }
+    function stop(){ clearInterval(timer); }
+
+    function setPaused(v){
+      paused = v;
+    }
+
+    container.addEventListener('mouseenter', () => setPaused(true));
+    container.addEventListener('mouseleave', () => setPaused(false));
+    container.addEventListener('click', () => setPaused(!paused));
+
+    start();
+  })();
+
   const grid = document.getElementById('grid');
 
   function parsePrice(str){

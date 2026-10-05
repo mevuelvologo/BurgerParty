@@ -116,6 +116,43 @@
   .promo-text .big b{ font-weight:900; }
   .promo-note{ margin-top:6px; font-size:18px; color:rgba(255,255,255,0.75); font-weight:500; }
 
+  /* ---------- PACKS (3 "pantallas" rotando promos, full-bleed) ---------- */
+  .packs{ padding:4px 0 26px; }
+  .packs-title{
+    font-size:13px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--white); margin:0 0 10px 2px;
+  }
+  .packs-title .hl{ color:var(--yellow); }
+  .packs-screens{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap:6px;
+    /* full-bleed: se sale del padding del .wrap para ganar ancho en mobile */
+    margin:0 -16px;
+    padding:0 16px;
+  }
+  @media(min-width:640px){ .packs-screens{ margin:0; padding:0; gap:10px; } }
+
+  .pack-screen{
+    position:relative;
+    border-radius:14px;
+    overflow:hidden;
+    /* proporción real de los banners (1231 x 2462), para no recortar nada */
+    aspect-ratio: 1231 / 2462;
+    background:var(--black);
+    border:2px solid rgba(255,120,90,0.18);
+    box-shadow:0 6px 14px rgba(0,0,0,0.25);
+    cursor:pointer;
+  }
+  .pack-screen img{
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    object-fit:contain;
+    opacity:1;
+    transition:opacity .5s ease;
+  }
+  .pack-screen img.is-out{ opacity:0; }
+
   /* ---------- GRID (sistema de "cuerpos") ----------
      Las 3 columnas son SIEMPRE del mismo ancho. Las proporciones de cada
      tarjeta (1, 2 o N cuerpos) se definen con aspect-ratio relativo al
