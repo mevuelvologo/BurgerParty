@@ -24,13 +24,17 @@
     { id:'p8', type:'photo', img:'images/salchichas.jpg',     name:'6 Salchichas Largas', sub:'con Pan Fargo',       price:'8.000',  step:1, mode:'multiply' },
   ];
 
-  // ---------- PACKS (carrusel infinito) ----------
-  // Para agregar un pack nuevo en el futuro: sumá un objeto acá, nada más.
+  // ---------- PACKS (3 pantallas rotando promos) ----------
+  // Para agregar un pack nuevo en el futuro: subí las dos imágenes a images/
+  // (miniatura: pack-N.jpg, grande para pantalla completa: pack-N-large.jpg)
+  // y sumá un objeto acá, nada más.
   const packs = [
-    { img:'images/pack-1.jpg', alt:'Pack 1 — 4 hamburguesas con pan y papas' },
-    { img:'images/pack-2.jpg', alt:'Pack 2 — 8 hamburguesas con pan, papas y cheddar' },
-    { img:'images/pack-3.jpg', alt:'Pack 3 — 60 hamburguesas con pan y aderezo' },
-    { img:'images/pack-4.jpg', alt:'Pack 4 — 4 hamburguesas de pollo con pan' },
+    { img:'images/pack-1.jpg', large:'images/pack-1-large.jpg', alt:'Pack 1 — 4 hamburguesas con pan y papas' },
+    { img:'images/pack-2.jpg', large:'images/pack-2-large.jpg', alt:'Pack 2 — 8 hamburguesas con pan, papas y cheddar' },
+    { img:'images/pack-3.jpg', large:'images/pack-3-large.jpg', alt:'Pack 3 — 60 hamburguesas con pan y aderezo' },
+    { img:'images/pack-4.jpg', large:'images/pack-4-large.jpg', alt:'Pack 4 — 4 hamburguesas de pollo con pan' },
+    { img:'images/pack-5.jpg', large:'images/pack-5-large.jpg', alt:'Pack 5 — 4 UG Gigantes con pan y papas' },
+    { img:'images/pack-6.jpg', large:'images/pack-6-large.jpg', alt:'Pack 6 — 4 hamburguesas con pan y Coca-Cola' },
   ];
 
   (function setupPacksScreens(){
@@ -41,23 +45,72 @@
     const ROTATE_MS = 3000;
     const FADE_MS = 500;
 
-    // Si hay 3 packs o menos, se muestran fijos, sin rotar (no hay de dónde sacar un 4to).
+    // Si hay 3 packs o menos, se muestran fijos, sin rotar.
     const n = Math.min(SLOTS, packs.length);
-    container.innerHTML = packs.slice(0, n).map(p => `
-      <div class="pack-screen">
+    container.innerHTML = packs.slice(0, n).map((p, i) => `
+      <div class="pack-screen" data-pack="${i}" role="button" tabindex="0" aria-label="Ver ${p.alt} en pantalla completa">
         <img src="${p.img}" alt="${p.alt}" loading="lazy">
       </div>
     `).join('');
 
+    const screens = [...container.querySelectorAll('.pack-screen')];
+
+    // ---------- PANTALLA COMPLETA (lightbox) ----------
+    const lightbox = document.createElement('div');
+    lightbox.className = 'lightbox';
+    lightbox.setAttribute('role', 'dialog');
+    lightbox.setAttribute('aria-modal', 'true');
+    lightbox.setAttribute('aria-label', 'Pack en pantalla completa');
+    lightbox.hidden = true;
+    lightbox.innerHTML = `
+      <button class="lightbox-close" type="button" aria-label="Cerrar">&times;</button>
+      <img class="lightbox-img" alt="">
+    `;
+    document.body.appendChild(lightbox);
+    const lightboxImg = lightbox.querySelector('.lightbox-img');
+    const lightboxClose = lightbox.querySelector('.lightbox-close');
+    let lightboxOpen = false;
+    let lastFocused = null;
+
+    function openLightbox(packIndex){
+      const p = packs[packIndex];
+      lightboxImg.src = p.large || p.img;
+      lightboxImg.alt = p.alt;
+      lastFocused = document.activeElement;
+      lightbox.hidden = false;
+      lightboxOpen = true;
+      document.body.classList.add('lightbox-open');
+      lightboxClose.focus();
+    }
+    function closeLightbox(){
+      if(!lightboxOpen) return;
+      lightbox.hidden = true;
+      lightboxOpen = false;
+      document.body.classList.remove('lightbox-open');
+      lightboxImg.removeAttribute('src');
+      if(lastFocused && lastFocused.focus) lastFocused.focus();
+    }
+
+    lightbox.addEventListener('click', closeLightbox);
+    document.addEventListener('keydown', e => { if(e.key === 'Escape') closeLightbox(); });
+
+    screens.forEach(screen => {
+      const open = () => openLightbox(parseInt(screen.dataset.pack, 10));
+      screen.addEventListener('click', open);
+      screen.addEventListener('keydown', e => {
+        if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); open(); }
+      });
+    });
+
+    // ---------- ROTACIÓN ----------
     if(packs.length <= SLOTS) return;
 
-    const screens = [...container.querySelectorAll('.pack-screen')];
-    // "visible" = índice (en packs[]) que muestra cada pantalla ahora mismo.
+    // "visible" = pack que muestra cada pantalla ahora; "queue" = packs que esperan su turno.
     const visible = [0, 1, 2];
-    let missing = SLOTS; // el único pack que todavía no se está mostrando
+    const queue = [];
+    for(let i = SLOTS; i < packs.length; i++) queue.push(i);
     let slotPtr = 0;
-    let paused = false;
-    let timer = null;
+    let hoverPaused = false;
 
     function swapSlot(slotIndex, packIndex){
       const screen = screens[slotIndex];
@@ -68,6 +121,8 @@
       newImg.loading = 'lazy';
       newImg.style.opacity = '0';
       screen.appendChild(newImg);
+      screen.dataset.pack = packIndex;
+      screen.setAttribute('aria-label', `Ver ${packs[packIndex].alt} en pantalla completa`);
       // forzar reflow para que la transición de opacidad corra
       void newImg.offsetWidth;
       oldImg.classList.add('is-out');
@@ -76,26 +131,19 @@
     }
 
     function tick(){
-      if(paused) return;
+      if(hoverPaused || lightboxOpen) return;
+      const incoming = queue.shift();
       const outgoing = visible[slotPtr];
-      visible[slotPtr] = missing;
-      swapSlot(slotPtr, missing);
-      missing = outgoing;
+      visible[slotPtr] = incoming;
+      swapSlot(slotPtr, incoming);
+      queue.push(outgoing);
       slotPtr = (slotPtr + 1) % SLOTS;
     }
 
-    function start(){ timer = setInterval(tick, ROTATE_MS); }
-    function stop(){ clearInterval(timer); }
+    container.addEventListener('mouseenter', () => { hoverPaused = true; });
+    container.addEventListener('mouseleave', () => { hoverPaused = false; });
 
-    function setPaused(v){
-      paused = v;
-    }
-
-    container.addEventListener('mouseenter', () => setPaused(true));
-    container.addEventListener('mouseleave', () => setPaused(false));
-    container.addEventListener('click', () => setPaused(!paused));
-
-    start();
+    setInterval(tick, ROTATE_MS);
   })();
 
   const grid = document.getElementById('grid');
