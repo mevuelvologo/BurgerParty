@@ -35,6 +35,8 @@
     { img:'images/pack-4.jpg', large:'images/pack-4-large.jpg', alt:'Pack 4 — 4 hamburguesas de pollo con pan' },
     { img:'images/pack-5.jpg', large:'images/pack-5-large.jpg', alt:'Pack 5 — 4 UG Gigantes con pan y papas' },
     { img:'images/pack-6.jpg', large:'images/pack-6-large.jpg', alt:'Pack 6 — 4 hamburguesas con pan y Coca-Cola' },
+    { img:'images/pack-7.jpg', large:'images/pack-7-large.jpg', alt:'Pack 7 — 12 Paty Clásicos con pan y papas' },
+    { img:'images/pack-8.jpg', large:'images/pack-8-large.jpg', alt:'Pack 8 — 8 Unión Ganadera con pan y papas' },
   ];
 
   (function setupPacksScreens(){
