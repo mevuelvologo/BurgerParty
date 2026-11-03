@@ -24,40 +24,33 @@
     { id:'p8', type:'photo', img:'images/salchichas.jpg',     name:'6 Salchichas Largas', sub:'con Pan Fargo',       price:'8.000',  step:1, mode:'multiply' },
   ];
 
-  // ---------- PACKS (3 pantallas rotando promos) ----------
-  // Para agregar un pack nuevo en el futuro: subí las dos imágenes a images/
-  // (miniatura: pack-N.jpg, grande para pantalla completa: pack-N-large.jpg)
-  // y sumá un objeto acá, nada más.
+  // ---------- PACKS (catálogo + pantalla completa con botón de pedido) ----------
+  // Para agregar un pack nuevo: subí images/pack-N.jpg (miniatura) y
+  // images/pack-N-large.jpg (pantalla completa) y sumá un objeto acá.
+  // El precio va como texto, igual que en los productos.
   const packs = [
-    { img:'images/pack-1.jpg', large:'images/pack-1-large.jpg', alt:'Pack 1 — 4 hamburguesas con pan y papas' },
-    { img:'images/pack-2.jpg', large:'images/pack-2-large.jpg', alt:'Pack 2 — 8 hamburguesas con pan, papas y cheddar' },
-    { img:'images/pack-3.jpg', large:'images/pack-3-large.jpg', alt:'Pack 3 — 60 hamburguesas con pan y aderezo' },
-    { img:'images/pack-4.jpg', large:'images/pack-4-large.jpg', alt:'Pack 4 — 4 hamburguesas de pollo con pan' },
-    { img:'images/pack-5.jpg', large:'images/pack-5-large.jpg', alt:'Pack 5 — 4 UG Gigantes con pan y papas' },
-    { img:'images/pack-6.jpg', large:'images/pack-6-large.jpg', alt:'Pack 6 — 4 hamburguesas con pan y Coca-Cola' },
-    { img:'images/pack-7.jpg', large:'images/pack-7-large.jpg', alt:'Pack 7 — 12 Paty Clásicos con pan y papas' },
-    { img:'images/pack-8.jpg', large:'images/pack-8-large.jpg', alt:'Pack 8 — 8 Unión Ganadera con pan y papas' },
+    { name:'Pack 1', price:'14.000',  img:'images/pack-1.jpg', large:'images/pack-1-large.jpg', alt:'Pack 1 — 4 hamburguesas con pan y papas' },
+    { name:'Pack 2', price:'28.000',  img:'images/pack-2.jpg', large:'images/pack-2-large.jpg', alt:'Pack 2 — 8 hamburguesas con pan, papas y cheddar' },
+    { name:'Pack 3', price:'145.000', img:'images/pack-3.jpg', large:'images/pack-3-large.jpg', alt:'Pack 3 — 60 hamburguesas con pan y aderezo' },
+    { name:'Pack 4', price:'6.000',   img:'images/pack-4.jpg', large:'images/pack-4-large.jpg', alt:'Pack 4 — 4 hamburguesas de pollo con pan' },
+    { name:'Pack 5', price:'16.000',  img:'images/pack-5.jpg', large:'images/pack-5-large.jpg', alt:'Pack 5 — 4 UG Gigantes con pan y papas' },
+    { name:'Pack 6', price:'15.000',  img:'images/pack-6.jpg', large:'images/pack-6-large.jpg', alt:'Pack 6 — 4 hamburguesas con pan y Coca-Cola' },
+    { name:'Pack 7', price:'27.000',  img:'images/pack-7.jpg', large:'images/pack-7-large.jpg', alt:'Pack 7 — 12 Paty Clásicos con pan y papas' },
+    { name:'Pack 8', price:'32.000',  img:'images/pack-8.jpg', large:'images/pack-8-large.jpg', alt:'Pack 8 — 8 Unión Ganadera con pan y papas' },
   ];
 
-  (function setupPacksScreens(){
-    const container = document.getElementById('packs-screens');
+  (function setupPacks(){
+    const container = document.getElementById('packs-grid');
     if(!container || packs.length === 0) return;
 
-    const SLOTS = 3;
-    const ROTATE_MS = 3000;
-    const FADE_MS = 500;
-
-    // Si hay 3 packs o menos, se muestran fijos, sin rotar.
-    const n = Math.min(SLOTS, packs.length);
-    container.innerHTML = packs.slice(0, n).map((p, i) => `
-      <div class="pack-screen" data-pack="${i}" role="button" tabindex="0" aria-label="Ver ${p.alt} en pantalla completa">
+    container.innerHTML = packs.map((p, i) => `
+      <button class="pack-card" type="button" data-pack="${i}" aria-label="Ver ${p.alt} en pantalla completa">
         <img src="${p.img}" alt="${p.alt}" loading="lazy">
-      </div>
+      </button>
     `).join('');
 
-    const screens = [...container.querySelectorAll('.pack-screen')];
-
-    // ---------- PANTALLA COMPLETA (lightbox) ----------
+    // ---------- PANTALLA COMPLETA (lightbox) con botón "Quiero esto" ----------
+    const waIcon = document.querySelector('#wa-btn svg');
     const lightbox = document.createElement('div');
     lightbox.className = 'lightbox';
     lightbox.setAttribute('role', 'dialog');
@@ -67,10 +60,16 @@
     lightbox.innerHTML = `
       <button class="lightbox-close" type="button" aria-label="Cerrar">&times;</button>
       <img class="lightbox-img" alt="">
+      <a class="lightbox-order" href="#" target="_blank" rel="noopener">
+        ${waIcon ? waIcon.outerHTML : ''}
+        <span>Quiero esto</span>
+      </a>
     `;
     document.body.appendChild(lightbox);
+
     const lightboxImg = lightbox.querySelector('.lightbox-img');
     const lightboxClose = lightbox.querySelector('.lightbox-close');
+    const lightboxOrder = lightbox.querySelector('.lightbox-order');
     let lightboxOpen = false;
     let lastFocused = null;
 
@@ -78,6 +77,8 @@
       const p = packs[packIndex];
       lightboxImg.src = p.large || p.img;
       lightboxImg.alt = p.alt;
+      const msg = `Hola! Quiero el ${p.name} - Precio: $${p.price}`;
+      lightboxOrder.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(msg)}`;
       lastFocused = document.activeElement;
       lightbox.hidden = false;
       lightboxOpen = true;
@@ -94,58 +95,13 @@
     }
 
     lightbox.addEventListener('click', closeLightbox);
+    // el botón de pedido no cierra la pantalla completa: abre WhatsApp y listo
+    lightboxOrder.addEventListener('click', e => e.stopPropagation());
     document.addEventListener('keydown', e => { if(e.key === 'Escape') closeLightbox(); });
 
-    screens.forEach(screen => {
-      const open = () => openLightbox(parseInt(screen.dataset.pack, 10));
-      screen.addEventListener('click', open);
-      screen.addEventListener('keydown', e => {
-        if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); open(); }
-      });
+    container.querySelectorAll('.pack-card').forEach(card => {
+      card.addEventListener('click', () => openLightbox(parseInt(card.dataset.pack, 10)));
     });
-
-    // ---------- ROTACIÓN ----------
-    if(packs.length <= SLOTS) return;
-
-    // "visible" = pack que muestra cada pantalla ahora; "queue" = packs que esperan su turno.
-    const visible = [0, 1, 2];
-    const queue = [];
-    for(let i = SLOTS; i < packs.length; i++) queue.push(i);
-    let slotPtr = 0;
-    let hoverPaused = false;
-
-    function swapSlot(slotIndex, packIndex){
-      const screen = screens[slotIndex];
-      const oldImg = screen.querySelector('img');
-      const newImg = document.createElement('img');
-      newImg.src = packs[packIndex].img;
-      newImg.alt = packs[packIndex].alt;
-      newImg.loading = 'lazy';
-      newImg.style.opacity = '0';
-      screen.appendChild(newImg);
-      screen.dataset.pack = packIndex;
-      screen.setAttribute('aria-label', `Ver ${packs[packIndex].alt} en pantalla completa`);
-      // forzar reflow para que la transición de opacidad corra
-      void newImg.offsetWidth;
-      oldImg.classList.add('is-out');
-      newImg.style.opacity = '1';
-      setTimeout(() => oldImg.remove(), FADE_MS + 50);
-    }
-
-    function tick(){
-      if(hoverPaused || lightboxOpen) return;
-      const incoming = queue.shift();
-      const outgoing = visible[slotPtr];
-      visible[slotPtr] = incoming;
-      swapSlot(slotPtr, incoming);
-      queue.push(outgoing);
-      slotPtr = (slotPtr + 1) % SLOTS;
-    }
-
-    container.addEventListener('mouseenter', () => { hoverPaused = true; });
-    container.addEventListener('mouseleave', () => { hoverPaused = false; });
-
-    setInterval(tick, ROTATE_MS);
   })();
 
   const grid = document.getElementById('grid');
