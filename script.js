@@ -1,345 +1,155 @@
-// ---------- CONFIG ----------
-  const WHATSAPP_PHONE = '5491163951550'; // 11 6395-1550 (AR)
-  const INSTAGRAM_USER = 'burgerpartyfoods';
-  const ADDRESS_QUERY  = 'Bonifacini 4691, Caseros, Provincia de Buenos Aires, Argentina';
+(function(){
+const WA='5491163951550', IG='burgerpartyfoods', ADDR='Bonifacini 4691, Caseros, Provincia de Buenos Aires, Argentina';
+document.querySelectorAll('[id^="ig-btn"]').forEach(e=>e.href='https://instagram.com/'+IG);
+document.querySelectorAll('[id^="wa-btn"]').forEach(e=>e.href='https://wa.me/'+WA);
+document.querySelectorAll('[id^="map-btn"]').forEach(e=>e.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(ADDR));
+const WAICON=(document.querySelector('[id^="wa-btn"] svg')||{}).outerHTML||'';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const P=Object.fromEntries(PRODUCTS.map(p=>[p.id,p]));
+const money=n=>n==null?'A confirmar':'$'+String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+const fq=(q,p)=>String(q).replace('.',',')+(p&&p.unit==='kg'?' kg':'');
+const unit=p=>p.price==null?'':' /'+(p.unit==='unidad'?'u':p.unit);
+const total=it=>it.length&&it.every(([id])=>P[id].price!=null)?it.reduce((a,[id,n])=>a+P[id].price*n,0):null;
+const waLink=m=>'https://wa.me/'+WA+'?text='+encodeURIComponent(m);
+let q='',tab='packs',sort='n-asc';
+const tokens=()=>norm(q).replace(/combos?/g,'pack').split(/\s+/).filter(Boolean); // "combo" sigue funcionando como búsqueda
+const match=t=>{const h=norm(t);return tokens().every(k=>h.includes(k));};
+const prodText=p=>[p.title,p.brand,p.desc,CATEGORIES[p.cat]].join(' ');
+const packText=pk=>'pack '+pk.n+' '+pk.title+' '+pk.items.map(([id])=>prodText(P[id])).join(' ');
+const burgers=pk=>pk.items.reduce((a,[id,n])=>a+(P[id].cat==='hamburguesa'?n:0),0);
 
-  document.querySelectorAll('#ig-btn, #ig-btn-2').forEach(el => el.href = `https://instagram.com/${INSTAGRAM_USER}`);
-  document.querySelectorAll('#wa-btn, #wa-btn-2').forEach(el => el.href = `https://wa.me/${WHATSAPP_PHONE}`);
-  document.querySelectorAll('#map-btn, #map-btn-2').forEach(el => el.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ADDRESS_QUERY)}`);
+// ---------- IMÁGENES ----------
+const Q=t=>`<span class="q" title="${esc(t)}">?</span>`;
+function photos(p,n){ // fotos de un producto para una cantidad n; null = falta la foto
+  if(p.stacks){const sz=Object.keys(p.stacks).map(Number).sort((a,b)=>b-a);let r=n,o=[];
+    while(r>0&&o.length<2){const k=sz.find(x=>x<=r)||sz[sz.length-1];o.push(p.stacks[k]);r-=k;}return o;}
+  return [p.img||null];
+}
+const th=p=>{const f=p.img||(p.stacks&&(p.stacks[4]||Object.values(p.stacks)[0]));return `<span class="th">${f?`<img src="${f}" alt="" loading="lazy">`:Q('Falta la foto: '+p.title)}</span>`;};
+const logo=b=>!b?'':LOGOS[b]?`<img src="${LOGOS[b]}" alt="${esc(b)}">`:`<span class="q q-s" title="Falta el logo: ${esc(b)}">?</span>`;
 
-  // ---------- DATA ----------
-  // mode 'replace': el nombre empieza con un número (ej "4 Super Burger") que se
-  //   reemplaza directo por el total (4 -> 6 -> 8...), sin "x". Precio escala
-  //   proporcional al total sobre baseCount.
-  // mode 'multiply': el nombre no tiene número propio, se antepone "N× " y el
-  //   precio es precio unitario x cantidad.
-  const products = [
-    { id:'p1', type:'photo', img:'images/papas-baston.png',   name:'Papas Bastón',        sub:'x 2 Kg',              price:'8.000',  step:1, mode:'multiply' },
-    { id:'p2', type:'photo', img:'images/latas-birra.png',    name:'6 Latas De Birra',    sub:'x 473 cc',            price:'12.000', step:1, mode:'multiply' },
-    { id:'p3', type:'photo', img:'images/super-burger.jpg',   name:'4 Super Burger',      sub:'con pan Bimbo Artesano',      price:'10.000', step:2, mode:'replace', baseCount:4, nameRest:' Super Burger' },
-    { id:'p4', type:'photo', img:'images/burger-clasicas.jpg',name:'6 Burger Clásicas',   sub:'con pan Bimbo Artesano',      price:'14.000', step:2, mode:'replace', baseCount:6, minCount:4, nameRest:' Burger Clásicas' },
-    { id:'p5', type:'photo', img:'images/papas-smiles.png',   name:'Papas Smiles',        sub:'x 700 gr',            price:'8.000',  step:1, mode:'multiply' },
-    { id:'p6', type:'photo', img:'images/fernet-coca.png',    name:'Fernet con Coca',     sub:'4,5L + 750cc',        price:'27.500', step:1, mode:'multiply' },
-    { id:'p7', type:'photo', img:'images/burger-union.jpg',   name:'4 Burger Unión 55 g', sub:'con pan Bimbo Artesano',      price:'6.500',  step:2, mode:'replace', baseCount:4, nameRest:' Burger Unión 55 g' },
-    { id:'p8', type:'photo', img:'images/salchichas.jpg',     name:'6 Salchichas Largas', sub:'con Pan Fargo',       price:'8.000',  step:1, mode:'multiply' },
-  ];
+// ---------- ESCENARIO: dibuja TODAS las unidades del pack, achicadas para que entren ----------
+function units(p,n){
+  if(p.stacks){const t=p.stacks,o=[];let r=n;if(r%4===2){const b=t[6]&&r>=6?6:2;o.push(t[b]);r-=b;}for(;r>=4;r-=4)o.push(t[4]);if(r>0)o.push(t[2]);return o;}
+  return Array(Math.max(1,Math.ceil(n/(p.per||1)-1e-9))).fill(p.img||null);
+}
+function fit(imgs,s){const g=s*.1,rows=[];let cur=null,x=0;
+  for(const m of imgs){const w=s*(m.eq?1:Math.sqrt(m.ar)),h=w/m.ar;if(w>100)return null;
+    if(!cur||x+w>100){cur={it:[],w:0,h:0};rows.push(cur);x=0;}
+    cur.it.push({m,w,h});cur.w=x+w;cur.h=Math.max(cur.h,h);x+=w+g;}
+  const tot=rows.reduce((a,r)=>a+r.h,0)+g*(rows.length-1);return tot<=70?{rows,g,tot}:null;}
+function stage(pk){
+  const imgs=pk.items.flatMap(([id,n])=>units(P[id],n).map(src=>({src,ar:(src&&AR[src])||1,t:P[id].title,eq:P[id].cat==='hamburguesa'||P[id].cat==='pan'})));
+  let lo=1,hi=34,best=fit(imgs,1);
+  for(let i=0;i<30;i++){const mid=(lo+hi)/2,r=fit(imgs,mid);if(r){lo=mid;best=r;}else hi=mid;}
+  let y=(70-best.tot)/2,html='';
+  for(const r of best.rows){let x=(100-r.w)/2;
+    for(const o of r.it){const pos=`left:${x.toFixed(2)}%;top:${((y+r.h-o.h)/70*100).toFixed(2)}%;width:${o.w.toFixed(2)}%`;
+      html+=o.m.src?`<img src="${o.m.src}" alt="" loading="lazy" style="${pos}">`:`<span class="q" style="${pos}" title="Falta la foto: ${esc(o.m.t)}">?</span>`;x+=o.w+best.g;}
+    y+=r.h+best.g;}
+  return html;
+}
 
-  // ---------- PACKS (catálogo + pantalla completa con botón de pedido) ----------
-  // Para agregar un pack nuevo: subí images/pack-N.jpg (miniatura) y
-  // images/pack-N-large.jpg (pantalla completa) y sumá un objeto acá.
-  // El precio va como texto, igual que en los productos.
-  const packs = [
-    { name:'Pack 1', price:'14.000',  img:'images/pack-1.jpg', large:'images/pack-1-large.jpg', alt:'Pack 1 — 4 hamburguesas con pan y papas' },
-    { name:'Pack 2', price:'28.000',  img:'images/pack-2.jpg', large:'images/pack-2-large.jpg', alt:'Pack 2 — 8 hamburguesas con pan, papas y cheddar' },
-    { name:'Pack 3', price:'145.000', img:'images/pack-3.jpg', large:'images/pack-3-large.jpg', alt:'Pack 3 — 60 hamburguesas con pan y aderezo' },
-    { name:'Pack 4', price:'6.000',   img:'images/pack-4.jpg', large:'images/pack-4-large.jpg', alt:'Pack 4 — 4 hamburguesas de pollo con pan' },
-    { name:'Pack 5', price:'16.000',  img:'images/pack-5.jpg', large:'images/pack-5-large.jpg', alt:'Pack 5 — 4 UG Gigantes con pan y papas' },
-    { name:'Pack 6', price:'15.000',  img:'images/pack-6.jpg', large:'images/pack-6-large.jpg', alt:'Pack 6 — 4 hamburguesas con pan y Coca-Cola' },
-    { name:'Pack 7', price:'27.000',  img:'images/pack-7.jpg', large:'images/pack-7-large.jpg', alt:'Pack 7 — 12 Paty Clásicos con pan y papas' },
-    { name:'Pack 8', price:'32.000',  img:'images/pack-8.jpg', large:'images/pack-8-large.jpg', alt:'Pack 8 — 8 Unión Ganadera con pan y papas' },
-  ];
+// ---------- PACKS ----------
+function packCard(pk){
+  const t=total(pk.items);
+  const msg='Hola! Quiero el Pack '+pk.n+(t!=null?' - Precio: '+money(t):'');
+  const brands=[...new Set(pk.items.map(([id])=>P[id].brand))].map(logo).join('');
+  return `<article class="pack" style="--c1:${pk.color[0]};--c2:${pk.color[1]};--ac:${pk.accent}">
+  <div class="pack-head"><span>PACK</span><b>${pk.n}</b></div><h3>${esc(pk.title)}</h3>
+  <div class="stage">${stage(pk)}</div>
+  <ul class="pack-items">${pk.items.map(([id,n])=>`<li><b>${fq(n,P[id])}</b> ${esc(P[id].title)}</li>`).join('')}</ul>
+  <div class="pack-brands">${brands}</div>
+  <div class="pack-foot"><div class="pack-price${t==null?' tbc':''}">${money(t)}</div><a class="order" target="_blank" rel="noopener" href="${waLink(msg)}">${WAICON}<span>Quiero esto</span></a></div></article>`;
+}
+function renderPacks(){
+  const list=PACKS.filter(pk=>match(packText(pk))),[k,d]=sort.split('-');
+  const key=pk=>k==='n'?pk.n:k==='p'?total(pk.items):burgers(pk);
+  list.sort((a,b)=>{const x=key(a),y=key(b);if(x==null&&y==null)return a.n-b.n;if(x==null)return 1;if(y==null)return -1;return(d==='asc'?x-y:y-x)||a.n-b.n;});
+  $('#packs-grid').innerHTML=list.map(packCard).join('')||'<p class="empty">No encontramos packs con esa búsqueda.</p>';
+  return list.length;
+}
 
-  (function setupPacks(){
-    const container = document.getElementById('packs-grid');
-    if(!container || packs.length === 0) return;
+// ---------- LISTA DE PRECIOS (solo consulta) ----------
+function renderList(){
+  let c=0;
+  const html=Object.keys(CATEGORIES).map(k=>{const ps=PRODUCTS.filter(p=>p.cat===k&&match(prodText(p)));c+=ps.length;
+    return ps.length?`<h3 class="lh">${CATEGORIES[k]}</h3><div class="lrows">${ps.map(p=>`<div class="lrow"><div><b>${esc(p.title)}</b><small>${esc(p.desc||'')}</small></div><div class="lp">${money(p.price)}<small>${p.price==null?'':'por '+p.unit}</small></div></div>`).join('')}</div>`:'';}).join('');
+  $('#list').innerHTML=html||'<p class="empty">No encontramos productos con esa búsqueda.</p>';
+  return c;
+}
 
-    container.innerHTML = packs.map((p, i) => `
-      <button class="pack-card" type="button" data-pack="${i}" aria-label="Ver ${p.alt} en pantalla completa">
-        <img src="${p.img}" alt="${p.alt}" loading="lazy">
-      </button>
-    `).join('');
-
-    // ---------- PANTALLA COMPLETA (lightbox) con botón "Quiero esto" ----------
-    const waIcon = document.querySelector('#wa-btn svg');
-    const lightbox = document.createElement('div');
-    lightbox.className = 'lightbox';
-    lightbox.setAttribute('role', 'dialog');
-    lightbox.setAttribute('aria-modal', 'true');
-    lightbox.setAttribute('aria-label', 'Pack en pantalla completa');
-    lightbox.hidden = true;
-    lightbox.innerHTML = `
-      <button class="lightbox-close" type="button" aria-label="Cerrar">&times;</button>
-      <img class="lightbox-img" alt="">
-      <a class="lightbox-order" href="#" target="_blank" rel="noopener">
-        ${waIcon ? waIcon.outerHTML : ''}
-        <span>Quiero esto</span>
-      </a>
-    `;
-    document.body.appendChild(lightbox);
-
-    const lightboxImg = lightbox.querySelector('.lightbox-img');
-    const lightboxClose = lightbox.querySelector('.lightbox-close');
-    const lightboxOrder = lightbox.querySelector('.lightbox-order');
-    let lightboxOpen = false;
-    let lastFocused = null;
-
-    function openLightbox(packIndex){
-      const p = packs[packIndex];
-      lightboxImg.src = p.large || p.img;
-      lightboxImg.alt = p.alt;
-      const msg = `Hola! Quiero el ${p.name} - Precio: $${p.price}`;
-      lightboxOrder.href = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(msg)}`;
-      lastFocused = document.activeElement;
-      lightbox.hidden = false;
-      lightboxOpen = true;
-      document.body.classList.add('lightbox-open');
-      lightboxClose.focus();
-    }
-    function closeLightbox(){
-      if(!lightboxOpen) return;
-      lightbox.hidden = true;
-      lightboxOpen = false;
-      document.body.classList.remove('lightbox-open');
-      lightboxImg.removeAttribute('src');
-      if(lastFocused && lastFocused.focus) lastFocused.focus();
-    }
-
-    lightbox.addEventListener('click', closeLightbox);
-    // el botón de pedido no cierra la pantalla completa: abre WhatsApp y listo
-    lightboxOrder.addEventListener('click', e => e.stopPropagation());
-    document.addEventListener('keydown', e => { if(e.key === 'Escape') closeLightbox(); });
-
-    container.querySelectorAll('.pack-card').forEach(card => {
-      card.addEventListener('click', () => openLightbox(parseInt(card.dataset.pack, 10)));
-    });
-  })();
-
-  const grid = document.getElementById('grid');
-
-  function parsePrice(str){
-    const digits = (str || '').replace(/[^\d]/g, '');
-    return digits ? parseInt(digits, 10) : 0;
+// ---------- ARMADOR (Productos) ----------
+const S={bq:0,bid:null,pid:null,x:{}};let cur=0;
+const STEPS=[
+  {t:'Hamburguesas',cats:['hamburguesa']},{t:'Panes',cats:['pan']},{t:'Papas y nuggets',cats:['papas','nuggets']},
+  {t:'Bebidas',cats:['bebida']},{t:'Quesos, aderezos y snacks',cats:['queso','aderezo','snack','salchicha']}
+].map(s=>({...s,items:PRODUCTS.filter(p=>s.cats.includes(p.cat))})).filter(s=>s.items.length);
+const SUG={papas:{per:.125,lbl:'kg de papas',unit:'kg'},queso:{per:1,lbl:'fetas de queso',unit:'feta'}};
+const items=()=>{const a=[];if(S.bid&&S.bq)a.push([S.bid,S.bq]);if(S.pid&&S.bq)a.push([S.pid,S.bq]);for(const id in S.x)if(S.x[id]>0)a.push([id,S.x[id]]);return a;};
+const opt=(p,act,on)=>`<button type="button" class="opt${on?' on':''}" data-act="${act}" data-id="${p.id}">${th(p)}<b>${esc(p.title)}</b><small>${esc(p.desc||'')}</small><span class="op">${money(p.price)}<i>${unit(p)}</i></span></button>`;
+const stp=(id,v,p)=>`<div class="stp"><button type="button" data-act="xdec" data-id="${id}">−</button><b>${fq(v,p)}</b><button type="button" data-act="xinc" data-id="${id}">+</button></div>`;
+function summary(){
+  const it=items(),t=total(it);
+  const same=PACKS.find(pk=>pk.items.length===it.length&&pk.items.every(([id,n])=>it.some(([i,m])=>i===id&&m===n)));
+  const msg='Hola! Quiero armar este pack:\n'+it.map(([id,n])=>'- '+fq(n,P[id])+' '+P[id].title).join('\n')+(t!=null?'\n\nTotal: '+money(t):'');
+  return `<div class="sum"><div class="sum-top"><b>Tu pack</b><span>${it.length?money(t):'Todavía vacío'}</span></div>
+  <div class="sum-chips">${it.map(([id,n])=>`<span>${fq(n,P[id])} × ${esc(P[id].title)}</span>`).join('')||'<span class="muted">Elegí hamburguesas para empezar</span>'}</div>
+  ${same?`<p class="sum-note">¡Es igual al Pack ${same.n}!</p>`:''}
+  ${it.length?`<div class="sum-act"><a class="order" target="_blank" rel="noopener" href="${waLink(msg)}">${WAICON}<span>Pedir este pack</span></a><button type="button" class="ghost" data-act="clear">Vaciar</button></div>`:''}</div>`;
+}
+function stepSum(s,i){
+  if(i===0)return S.bid?S.bq+' × '+P[S.bid].title:'';
+  if(i===1)return S.pid?P[S.pid].title:'';
+  const n=s.items.filter(p=>S.x[p.id]>0).length;return n?n+' elegido'+(n>1?'s':''):'Opcional';
+}
+function stepBody(s,i){
+  if(i===0)return `<p class="lbl">¿Cuántas hamburguesas?</p><div class="chips">${[4,8,12,20,40,60].map(v=>`<button type="button" class="chip${S.bq===v?' on':''}" data-act="bq" data-v="${v}">${v}</button>`).join('')}</div>
+  <div class="stp"><button type="button" data-act="bqdec">−</button><b>${S.bq}</b><button type="button" data-act="bqinc">+</button></div>
+  <p class="lbl">Marca y gramaje</p><div class="opts">${s.items.map(p=>opt(p,'bid',S.bid===p.id)).join('')}</div>`;
+  if(i===1)return S.bq?`<p class="lbl">${S.bq} panes, uno por hamburguesa. ¿De qué marca?</p><div class="opts">${s.items.map(p=>opt(p,'pid',S.pid===p.id)).join('')}</div>`:'<p class="muted">Primero elegí cuántas hamburguesas.</p>';
+  const hints=S.bq?s.cats.map(c=>{const g=SUG[c],p=g&&PRODUCTS.find(x=>x.cat===c&&x.unit===g.unit);if(!p)return'';const v=S.bq*g.per;
+    return `<p class="hint">Para ${S.bq} hamburguesas sugerimos ${String(v).replace('.',',')} ${g.lbl}. <button type="button" class="link" data-act="sug" data-id="${p.id}" data-v="${v}">Agregar sugerido</button></p>`;}).join(''):'';
+  return hints+`<div class="opts">${s.items.map(p=>`<div class="opt${S.x[p.id]>0?' on':''}">${th(p)}<b>${esc(p.title)}</b><small>${esc(p.desc||'')}</small><span class="op">${money(p.price)}<i>${unit(p)}</i></span>${stp(p.id,S.x[p.id]||0,p)}</div>`).join('')}</div>`;
+}
+function renderBuilder(){
+  let html=summary();
+  if(tokens().length){
+    const r=PRODUCTS.filter(p=>match(prodText(p)));
+    $('#builder').innerHTML=html+`<h3 class="lh">Resultados</h3><div class="opts">${r.map(p=>`<div class="opt">${th(p)}<b>${esc(p.title)}</b><small>${esc(p.desc||'')}</small><span class="op">${money(p.price)}<i>${unit(p)}</i></span><button type="button" class="ghost" data-act="add" data-id="${p.id}">Agregar</button></div>`).join('')}</div>`;
+    return r.length;
   }
-  function formatARS(n){
-    return n.toLocaleString('es-AR');
-  }
+  html+=STEPS.map((s,i)=>{const o=i===cur;return `<section class="step${o?' open':''}"><button type="button" class="step-h" data-act="open" data-i="${i}"><span class="num">${i+1}</span><b>${s.t}</b><small>${esc(stepSum(s,i))}</small></button>${o?`<div class="step-b">${stepBody(s,i)}<button type="button" class="next" data-act="next">${i===STEPS.length-1?'Listo':'Siguiente'}</button></div>`:''}</section>`;}).join('');
+  $('#builder').innerHTML=html;return PRODUCTS.length;
+}
+$('#builder').addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act,id=b.dataset.id,p=P[id];
+  if(a==='bq')S.bq=+b.dataset.v;
+  else if(a==='bqinc')S.bq+=2;
+  else if(a==='bqdec')S.bq=Math.max(0,S.bq-2);
+  else if(a==='bid'){S.bid=id;if(!S.bq)S.bq=4;}
+  else if(a==='pid'){S.pid=id;if(!S.bq)S.bq=4;}
+  else if(a==='xinc'||a==='xdec'){const st=p.step||1;S.x[id]=Math.max(0,+((S.x[id]||0)+(a==='xinc'?st:-st)).toFixed(2));}
+  else if(a==='sug'){const st=p.step||1;S.x[id]=Math.max(st,Math.round(+b.dataset.v/st)*st);}
+  else if(a==='next')cur=Math.min(STEPS.length,cur+1);
+  else if(a==='open')cur=+b.dataset.i;
+  else if(a==='add'){if(p.cat==='hamburguesa'){S.bid=id;if(!S.bq)S.bq=4;}else if(p.cat==='pan'){S.pid=id;if(!S.bq)S.bq=4;}else S.x[id]=(S.x[id]||0)+(p.step||1);}
+  else if(a==='clear'){S.bq=0;S.bid=S.pid=null;S.x={};cur=0;}
+  renderBuilder();
+});
 
-  function buildConsultMessage(name, sub, qty, totalPrice){
-    let msg = `Hola! Quiero consultar por: ${name}${sub ? ' (' + sub + ')' : ''}`;
-    msg += ` - Cantidad: ${qty}`;
-    if(totalPrice) msg += ` - Precio: $${formatARS(totalPrice)}`;
-    return msg;
-  }
-  function openWhatsApp(msg){
-    window.open(`https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(msg)}`, '_blank');
-  }
-
-  // ---------- CARRITO ----------
-  const cartBtn = document.getElementById('cart-btn');
-  const cartCountEl = document.getElementById('cart-count');
-  const cartSubtotalEl = document.getElementById('cart-subtotal');
-
-  function allCards(){
-    return [...grid.querySelectorAll('.card')];
-  }
-
-  function updateCart(){
-    let totalUnits = 0, subtotal = 0;
-    allCards().forEach(card => {
-      const qty = parseInt(card.dataset.qty || '0', 10);
-      if(qty > 0){
-        totalUnits += qty;
-        subtotal += parseInt(card.dataset.totalPrice || '0', 10);
-      }
-    });
-    cartCountEl.textContent = totalUnits;
-    cartSubtotalEl.textContent = totalUnits === 0 ? 'Tu pedido' : `$ ${formatARS(subtotal)}`;
-    cartBtn.classList.toggle('is-empty', totalUnits === 0);
-  }
-
-  cartBtn.addEventListener('click', () => {
-    const active = allCards().filter(card => parseInt(card.dataset.qty || '0', 10) > 0);
-    if(active.length === 0) return;
-
-    let subtotal = 0;
-    const lines = active.map(card => {
-      const qty = parseInt(card.dataset.qty, 10);
-      const lineTotal = parseInt(card.dataset.totalPrice, 10);
-      subtotal += lineTotal;
-      const name = card.dataset.name || '';
-      const sub = card.dataset.sub || '';
-      return `- ${name}${sub ? ' (' + sub + ')' : ''} x${qty} - $${formatARS(lineTotal)}`;
-    });
-
-    const msg = `Hola! Quiero hacer este pedido:\n${lines.join('\n')}\n\nSubtotal: $${formatARS(subtotal)}`;
-    openWhatsApp(msg);
-  });
-
-  // ---------- TARJETAS DE PRODUCTO ----------
-  products.forEach(p => {
-    const card = document.createElement('div');
-    card.className = `card card--${p.type}`;
-    card.draggable = true;
-    card.dataset.id = p.id;
-
-    card.innerHTML = `
-      <div class="qty-stepper" data-step="${p.step}">
-        <button class="qty-btn qty-minus" type="button" aria-label="Restar">&minus;</button>
-        <span class="qty-value">0</span>
-        <button class="qty-btn qty-plus" type="button" aria-label="Sumar">+</button>
-      </div>
-      ${p.type === 'photo' ? `<div class="art"><img src="${p.img}" alt="${p.name}"></div>` : ''}
-      <h3><span class="qty-prefix"></span><span class="title-text">${p.name}</span></h3>
-      <p class="sub">${p.sub}</p>
-      <div class="price-box">${p.price}</div>
-      <button class="consult-btn" type="button">Consultar x Wapp</button>
-    `;
-
-    grid.appendChild(card);
-    setupCardBehavior(card, p);
-  });
-
-  // ---------- COMBO CARD ----------
-  // Sacada por ahora (ocupaba 9 módulos abajo de todo). Para reactivarla,
-  // descomentar este bloque.
-  /*
-  const comboData = { name:'Burger Party x4 unidades', sub:'', price:'8.000', step:1, mode:'multiply' };
-  const combo = document.createElement('div');
-  combo.className = 'card card--text combo';
-  combo.draggable = true;
-  combo.dataset.id = 'combo';
-  combo.innerHTML = `
-    <div class="qty-stepper" data-step="1">
-      <button class="qty-btn qty-minus" type="button" aria-label="Restar">&minus;</button>
-      <span class="qty-value">0</span>
-      <button class="qty-btn qty-plus" type="button" aria-label="Sumar">+</button>
-    </div>
-    <img class="combo-img" src="images/hero.jpg" alt="Burger Party x4 unidades">
-    <div class="combo-overlay">
-      <div class="label"><span class="qty-prefix"></span>Precio <i>x4 unidades</i></div>
-      <div class="price-box">8.000</div>
-      <button class="consult-btn" type="button">Consultar x Wapp</button>
-    </div>
-  `;
-  grid.appendChild(combo);
-  setupCardBehavior(combo, comboData);
-  */
-
-  updateCart();
-
-  // ---------- COMPORTAMIENTO DE CADA TARJETA ----------
-  function setupCardBehavior(card, p){
-    const { name, sub, price: basePriceText, step, mode, baseCount, minCount, nameRest } = p;
-
-    card.dataset.name = name;
-    card.dataset.sub = sub;
-    card.dataset.qty = '0';
-    card.dataset.unitPrice = parsePrice(basePriceText);
-    card.dataset.basePriceText = basePriceText;
-    card.dataset.totalPrice = '0';
-
-    const priceBox = card.querySelector('.price-box');
-    const consultBtn = card.querySelector('.consult-btn');
-    const stepper = card.querySelector('.qty-stepper');
-    const qtyValueEl = card.querySelector('.qty-value');
-    const qtyPrefixEl = card.querySelector('.qty-prefix');
-    const titleTextEl = card.querySelector('.title-text');
-    const minusBtn = card.querySelector('.qty-minus');
-    const plusBtn = card.querySelector('.qty-plus');
-
-    function render(){
-      const qty = parseInt(card.dataset.qty, 10);
-      const unitPrice = parseInt(card.dataset.unitPrice, 10);
-
-      qtyValueEl.textContent = qty;
-      stepper.classList.toggle('has-qty', qty > 0);
-      card.classList.toggle('selected', qty > 0);
-
-      let totalPrice = 0;
-
-      if(mode === 'replace'){
-        const shown = qty > 0 ? qty : baseCount;
-        if(titleTextEl) titleTextEl.textContent = `${shown}${nameRest}`;
-        if(qtyPrefixEl) qtyPrefixEl.textContent = '';
-        totalPrice = qty > 0 ? Math.round(unitPrice * qty / baseCount) : 0;
-      } else {
-        if(qtyPrefixEl) qtyPrefixEl.textContent = qty > 0 ? `${qty}\u00D7 ` : '';
-        totalPrice = qty > 0 ? qty * unitPrice : 0;
-      }
-
-      card.dataset.totalPrice = totalPrice;
-      priceBox.textContent = qty > 0 ? formatARS(totalPrice) : card.dataset.basePriceText;
-    }
-
-    function setQty(newQty){
-      const floor = mode === 'replace' ? (minCount || baseCount) : step;
-      card.dataset.qty = String(newQty < floor ? 0 : newQty);
-      render();
-      updateCart();
-    }
-
-    minusBtn.addEventListener('mousedown', e => e.stopPropagation());
-    minusBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      setQty(parseInt(card.dataset.qty, 10) - step);
-    });
-
-    plusBtn.addEventListener('mousedown', e => e.stopPropagation());
-    plusBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      const current = parseInt(card.dataset.qty, 10);
-      const base = mode === 'replace' ? baseCount : step;
-      setQty(current === 0 ? base : current + step);
-    });
-
-    consultBtn.addEventListener('mousedown', e => e.stopPropagation());
-    consultBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      const base = mode === 'replace' ? baseCount : step;
-      const qty = Math.max(base, parseInt(card.dataset.qty, 10));
-      const totalPrice = mode === 'replace'
-        ? Math.round(parseInt(card.dataset.unitPrice, 10) * qty / baseCount)
-        : qty * parseInt(card.dataset.unitPrice, 10);
-      openWhatsApp(buildConsultMessage(name, sub, qty, totalPrice));
-    });
-
-    card.addEventListener('click', () => {
-      if (isDragging) return;
-      const current = parseInt(card.dataset.qty, 10);
-      const base = mode === 'replace' ? baseCount : step;
-      setQty(current > 0 ? 0 : base);
-    });
-
-    render();
-  }
-
-  // ---------- DRAG & DROP REORDER ----------
-  let isDragging = false;
-
-  grid.addEventListener('dragstart', e => {
-    const card = e.target.closest('.card');
-    if(!card) return;
-    isDragging = true;
-    card.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', card.dataset.id);
-  });
-
-  grid.addEventListener('dragend', e => {
-    const card = e.target.closest('.card');
-    if(card) card.classList.remove('dragging');
-    setTimeout(() => { isDragging = false; }, 50);
-  });
-
-  grid.addEventListener('dragover', e => {
-    e.preventDefault();
-    const dragging = grid.querySelector('.dragging');
-    if(!dragging) return;
-    const after = getDragAfterElement(grid, e.clientX, e.clientY);
-    if(after == null){ grid.appendChild(dragging); }
-    else { grid.insertBefore(dragging, after); }
-  });
-
-  function getDragAfterElement(container, x, y){
-    const els = [...container.querySelectorAll('.card:not(.dragging)')];
-    let closest = { offset: -Infinity, element: null };
-    for(const el of els){
-      const box = el.getBoundingClientRect();
-      const centerX = box.left + box.width / 2;
-      const centerY = box.top + box.height / 2;
-      const sameRow = y >= box.top && y <= box.bottom;
-      const offset = sameRow ? (x - centerX) : (y - centerY) * 1000;
-      if(offset < 0 && offset > closest.offset){ closest = { offset, element: el }; }
-    }
-    return closest.element;
-  }
+// ---------- BUSCADOR, ORDEN Y PESTAÑAS ----------
+const KEYS=['packs','build','list'];
+function renderAll(){
+  const c={packs:renderPacks(),build:renderBuilder(),list:renderList()};
+  document.querySelectorAll('.tab').forEach(t=>{t.querySelector('i').textContent=tokens().length?c[t.dataset.t]:'';t.classList.toggle('on',t.dataset.t===tab);});
+  KEYS.forEach(k=>$('#sec-'+k).hidden=k!==tab);
+  return c;
+}
+$('#q').addEventListener('input',e=>{q=e.target.value;let c=renderAll();if(tokens().length&&!c[tab]){const n=KEYS.find(k=>c[k]);if(n){tab=n;renderAll();}}});
+$('#sort').addEventListener('change',e=>{sort=e.target.value;renderPacks();});
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{tab=t.dataset.t;renderAll();}));
+renderAll();
+})();
