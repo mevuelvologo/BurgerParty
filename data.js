@@ -9,25 +9,25 @@ const CATEGORIES = { hamburguesa:'Hamburguesas', pan:'Panes', papas:'Papas', nug
 const LOGOS = { 'Unión Ganadera':'images/logos/ug.webp', 'Bimbo':'images/logos/bimbo.webp', 'Benidorm':'images/logos/benidorm.webp', 'Milkaut':'images/logos/milkaut.webp', 'Paty':'images/logos/paty.webp', 'Cool Mind':'images/logos/coolmind.webp', 'Coca-Cola':'images/logos/coca.webp', 'Fargo':'images/logos/fargo.webp' };
 // Fotos de pilas de medallones: tamaño de la pila -> archivo. Si un producto no tiene img ni stacks, se muestra un "?".
 const st = (f, s) => Object.fromEntries(s.map(n => [n, `images/p/${f}-${n}.webp`]));
-// PRECIOS APROXIMADOS (deducidos de los packs y de la lista vieja): el cliente los corrige desde editar-lista.html
+// Precios POR UNIDAD, prorrateados de la lista del cliente (x4 = ÷4, x6 = ÷6, ½ kg = ×2). Hamburguesas y panes: mínimo de a pares (step:2).
 const PRODUCTS = [
-  { id:'ug83',   cat:'hamburguesa', brand:'Unión Ganadera', title:'Hamburguesa Unión Ganadera 83 g', desc:'Medallón de carne congelado', unit:'unidad', step:2, price:1800, stacks:st('burger-83',[2,4,6]) },
-  { id:'uggig',  cat:'hamburguesa', brand:'Unión Ganadera', title:'Hamburguesa UG Gigantes', desc:'Medallón gigante de carne congelado', unit:'unidad', step:2, price:2300, stacks:st('burger-gig',[2,4,6]) },
-  { id:'ug55',   cat:'hamburguesa', brand:'Unión Ganadera', title:'Hamburguesa Unión Ganadera 55 g', desc:'Medallón de carne congelado', unit:'unidad', step:2, price:1000, stacks:st('burger-thin',[2,4,6]) },
-  { id:'paty',   cat:'hamburguesa', brand:'Paty', title:'Hamburguesa Paty Clásica', desc:'Medallón de carne congelado', unit:'unidad', step:2, price:900, stacks:st('burger-thin',[2,4,6]) },
-  { id:'calisa', cat:'hamburguesa', brand:'Calisa', title:'Hamburguesa de pollo Calisa Griller', desc:'Para plancha o parrilla', unit:'unidad', step:2, price:900, stacks:st('chicken',[2,4]) },
-  { id:'bimbo',  cat:'pan', brand:'Bimbo', title:'Pan Bimbo Artesano', desc:'Pan para hamburguesa', unit:'unidad', step:1, price:600, img:'images/p/pan-bimbo.webp' },
-  { id:'fargo',  cat:'pan', brand:'Fargo', title:'Pan Fargo con sésamo', desc:'Pan para hamburguesa', unit:'unidad', step:1, price:600, img:'images/p/pan-sesamo.webp' },
-  { id:'fargos', cat:'pan', brand:'Fargo', title:'Pan Fargo para salchicha', desc:'Pan para pancho', unit:'unidad', step:1, price:500 },
-  { id:'coolmind', cat:'papas', brand:'Cool Mind', title:'Papas Cool Mind congeladas', desc:'Papas bastón congeladas', unit:'kg', step:0.5, per:0.5, price:8800, img:'images/p/papas-coolmind.webp' },
-  { id:'smiles', cat:'papas', brand:'', title:'Papas Smiles', desc:'Bolsa de 700 g', unit:'bolsa', step:1, price:8000, img:'images/papas-smiles.png' },
-  { id:'baston', cat:'papas', brand:'', title:'Papas Bastón', desc:'Bolsa de 2 kg', unit:'bolsa', step:1, price:8000, img:'images/papas-baston.png' },
-  { id:'nuggets', cat:'nuggets', brand:'', title:'Nuggets de pollo', desc:'Nuggets congelados', unit:'kg', step:0.5, per:0.5, price:null, img:'images/p/nuggets.webp' },
-  { id:'cheddar', cat:'queso', brand:'Milkaut', title:'Cheddar en fetas Milkaut', desc:'Feta de cheddar', unit:'feta', step:1, per:8, price:300, img:'images/p/cheddar.webp' },
+  { id:'ug83',   cat:'hamburguesa', brand:'Unión Ganadera', title:'Hamburguesa Unión Ganadera 83 g', desc:'Medallón de carne congelado', unit:'unidad', step:2, price:2000, stacks:st('burger-83',[2,4,6]) },
+  { id:'uggig',  cat:'hamburguesa', brand:'Unión Ganadera', title:'Hamburguesa UG Gigantes 110 g', desc:'Medallón gigante de carne congelado', unit:'unidad', step:2, price:2750, stacks:st('burger-gig',[2,4,6]) },
+  { id:'ug55',   cat:'hamburguesa', brand:'Unión Ganadera', title:'Hamburguesa Unión Ganadera 55 g finitas', desc:'Medallón de carne congelado', unit:'unidad', step:2, price:1300, stacks:st('burger-thin',[2,4,6]) },
+  { id:'paty',   cat:'hamburguesa', brand:'Paty', title:'Hamburguesa Paty Clásica 80 g', desc:'Medallón de carne congelado', unit:'unidad', step:2, price:1325, stacks:st('burger-thin',[2,4,6]) },
+  { id:'calisa', cat:'hamburguesa', brand:'Calisa', title:'Hamburguesa de pollo Calisa Griller', desc:'Para plancha o parrilla', unit:'unidad', step:2, price:1400, stacks:st('chicken',[2,4]) },
+  { id:'bimbo',  cat:'pan', brand:'Bimbo', title:'Pan Bimbo Artesano', desc:'Pan para hamburguesa', unit:'unidad', step:2, price:500, img:'images/p/pan-bimbo.webp' },
+  { id:'fargo',  cat:'pan', brand:'Fargo', title:'Pan Fargo con sésamo', desc:'Pan para hamburguesa', unit:'unidad', step:2, price:500, img:'images/p/pan-sesamo.webp' },
+  { id:'fargos', cat:'pan', brand:'Fargo', title:'Pan Fargo para salchicha', desc:'Pan para pancho', unit:'unidad', step:2, price:600 },
+  { id:'coolmind', cat:'papas', brand:'Cool Mind', title:'Papas Cool Mind congeladas', desc:'Papas bastón congeladas', unit:'kg', step:0.5, per:0.5, price:5000, img:'images/p/papas-coolmind.webp' },
+  { id:'smiles', cat:'papas', brand:'', title:'Papas Smiles', desc:'Bolsa de 750 g', unit:'bolsa', step:1, price:8000, img:'images/papas-smiles.png' },
+  { id:'baston', cat:'papas', brand:'', title:'Papas Bastón', desc:'Bolsa de 2,25 kg', unit:'bolsa', step:1, price:11000, img:'images/papas-baston.png' },
+  { id:'nuggets', cat:'nuggets', brand:'Unión Ganadera', title:'Nuggets de pollo', desc:'Nuggets congelados Unión Ganadera', unit:'kg', step:0.5, per:0.5, price:13000, img:'images/p/nuggets.webp' },
+  { id:'cheddar', cat:'queso', brand:'Milkaut', title:'Cheddar en fetas Milkaut', desc:'Feta de cheddar', unit:'feta', step:1, per:8, price:325, img:'images/p/cheddar.webp' },
   { id:'benidorm', cat:'aderezo', brand:'Benidorm', title:'Aderezo Benidorm Barbacoa', desc:'500 g', unit:'unidad', step:1, price:1000, img:'images/p/benidorm.webp' },
-  { id:'coca',   cat:'bebida', brand:'Coca-Cola', title:'Coca-Cola 2,25 L', desc:'Botella 2,25 litros', unit:'unidad', step:1, price:5400, img:'images/p/coca.webp' },
-  { id:'latas',  cat:'bebida', brand:'', title:'Pack 6 latas de birra', desc:'Latas de 473 cc', unit:'pack', step:1, price:12000, img:'images/latas-birra.png' },
-  { id:'salch',  cat:'salchicha', brand:'', title:'Salchichas largas', desc:'Salchichas largas congeladas', unit:'unidad', step:1, price:800 },
+  { id:'coca',   cat:'bebida', brand:'Coca-Cola', title:'Coca-Cola 2,25 L', desc:'Botella 2,25 litros', unit:'unidad', step:1, price:5500, img:'images/p/coca.webp' },
+  { id:'latas',  cat:'bebida', brand:'', title:'Pack 6 latas de cerveza', desc:'Latas de 473 cc', unit:'pack', step:1, price:11000, img:'images/latas-birra.png' },
+  { id:'salch',  cat:'salchicha', brand:'Unión Ganadera', title:'Salchichas largas', desc:'Salchichas largas Unión Ganadera', unit:'unidad', step:1, price:750 },
 ];
 
 // items: [idProducto, cantidad]. color: fondo del pack (diferente en cada uno). accent: color del número.
