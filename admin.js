@@ -25,7 +25,7 @@ $('#rows').innerHTML = Object.keys(CATEGORIES).map(k => {
   return `<h3 class="lh">${CATEGORIES[k]}</h3>` + ps.map(p => `<div class="ed-row">
     <div><label>Título</label><input data-id="${p.id}" data-f="title" value="${esc(val(p,'title'))}" spellcheck="false"></div>
     <div><label>Descripción</label><input data-id="${p.id}" data-f="desc" value="${esc(val(p,'desc'))}" spellcheck="false"></div>
-    <div><label>Precio por ${esc(p.unit)} ($)</label><input class="ed-price" data-id="${p.id}" data-f="price" inputmode="numeric" placeholder="Falta" value="${esc(val(p,'price'))}"></div>
+    <div><label>Precio por ${esc(p.unit)} ($)</label><input class="ed-price" data-id="${p.id}" data-f="price" inputmode="numeric" placeholder="Consultar" value="${esc(val(p,'price'))}"></div>
   </div>`).join('');
 }).join('');
 
